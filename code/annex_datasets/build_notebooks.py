@@ -57,7 +57,7 @@ ABLATION_READING_MARKERS = (
 ABLATION_NOTE = (
     "**Reading.** The table above is the same ablation as the main study, "
     "recomputed on the **{title}** dataset, so the *mechanism* (how much of the "
-    "headline BA at $r=0.99$ comes from `class_weight` vs. threshold tuning) is "
+    "primary BA at $r=0.99$ comes from `class_weight` vs. threshold tuning) is "
     "directly comparable. The numeric commentary for `make_moons` lives in "
     "`../imbalance_experiments.ipynb`; here, read the two columns off the table "
     "for {title}.")

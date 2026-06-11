@@ -188,7 +188,7 @@ for noise in NOISE_LEVELS:
         print(line)
 
 # ============================================================================
-# 7. Pairwise table at r=0.99 (the headline)
+# 7. Pairwise table at r=0.99 (the main result)
 # ============================================================================
 for noise in NOISE_LEVELS:
     print('\n' + '=' * 90)

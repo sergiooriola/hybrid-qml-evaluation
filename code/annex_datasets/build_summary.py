@@ -4,7 +4,7 @@ build_summary.py
 Generator for `summary.ipynb`: the cross-dataset overview that puts the four
 toy datasets (sinus, corners, spiral, circles) side by side at the *full* grid
 (2 noise x 8 models x 7 ratios x 12 seeds), so the thesis annex can argue in one
-place whether the make_moons verdict of Case Study 2 transfers across
+place whether the make_moons conclusion of Case Study 2 transfers across
 geometries -- including the pairwise-certified quantum-advantage count, which the
 12-seed budget makes possible.
 
@@ -50,7 +50,7 @@ Aggregates the four per-dataset annex notebooks (`annex_sinus`, `annex_corners`,
 `annex_spiral`, `annex_circles`) into one view, at the **full grid identical to
 Case Study 2** (2 noise levels x 8 models x 7 ratios x 12 seeds = 1 344
 runs/dataset). The 12-seed budget is what lets the pairwise Friedman + Wilcoxon
-+ Holm protocol certify model pairs, so the headline of this notebook is the
++ Holm protocol certify model pairs, so the main result of this notebook is the
 **cross-dataset quantum-advantage table** (section 5): on how many datasets does
 any quantum model beat a classical baseline with Holm-corrected significance?
 
@@ -116,7 +116,7 @@ plt.show()
 """## 4. Degradation curves, all datasets (one row per noise level)
 
 Solid = quantum, dashed = classical; bands are +-1 std across the 12 seeds. This
-is the headline cross-dataset figure: compare the relative ordering of the
+is the main cross-dataset figure: compare the relative ordering of the
 curves with the main study."""),
     code(
 """
@@ -157,7 +157,7 @@ plt.savefig('figures/summary-degradation.png', dpi=130, bbox_inches='tight')
 plt.show()
 """),
     md(
-"""## 5. Cross-dataset quantum-advantage table (the headline)
+"""## 5. Cross-dataset quantum-advantage table (the main result)
 
 Mirrors section 9 of the main study, per dataset and noise level: for each
 (quantum, classical) pair, count the ratios (out of 7) at which the paired
@@ -249,17 +249,17 @@ for m in ALL_MODELS:
     print(line)
 """),
     md(
-"""## 8. Verdict
+"""## 8. Conclusion
 
 Read the annex conclusion off the cross-dataset table (sec. 5) and curves
 (sec. 4):
 
 * On `make_moons` (main study), the strong classical baselines (SVM-RBF, RF)
   lead at extreme imbalance and **no quantum model achieves Holm-certified
-  advantage**; the verdict is "no quantum advantage in this regime".
+  advantage**; the conclusion is "no quantum advantage in this regime".
 * If the four toy datasets keep that picture -- quantum-advantage counts at or
   near zero, classical baselines leading the degradation curves -- the annex
-  concludes the make_moons verdict **transfers** and is not an artefact of the
+  concludes the make_moons result **transfers** and is not an artefact of the
   two-moons geometry. Any dataset where a quantum model *does* earn a certified
   win is worth calling out explicitly.
 

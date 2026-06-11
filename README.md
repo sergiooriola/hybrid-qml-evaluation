@@ -25,13 +25,32 @@ project/
 └── code/                <- framework + case-study notebooks
     ├── qml_core.py            quantum primitives + Adam + parameter-shift
     ├── qml_imbalance.py       data + class weighting + models + runner
+    ├── toy_datasets.py        4 extra geometric datasets (make_moons-compatible)
+    │
     ├── VQC_Autodiff_and_ParameterShift.ipynb   Case Study 1 (Sec. 3.1)
     ├── imbalance_experiments.ipynb             Case Study 2 (Sec. 3.2)
-    ├── run_experiments.py     CLI driver with per-task checkpointing
-    ├── analyse_results.py     dump every statistical number for the thesis
-    ├── smoke_test.py          quick verification of the framework
-    └── results/
-        └── runs_simplified.json   1,344 runs from the production grid
+    │
+    ├── run_experiments.py     Case Study 2 grid driver (per-task checkpointing)
+    ├── analyse_results.py     dump every balanced-accuracy statistic for the thesis
+    ├── analyse_auc.py         same, for the threshold-independent ROC AUC
+    ├── plot_roc.py            test-set ROC curves (Sec. 3.2)
+    ├── smoke_test.py          quick end-to-end verification of the framework
+    │
+    ├── vqc_general.py         n-qubit / L-layer VQC for the Case 1 validation
+    ├── run_validation.py      Case 1 sweep vs the published reference (corners/circles)
+    ├── make_case1_validation.py   build the Case-1 validation figures + LaTeX tables
+    │
+    ├── results/
+    │   ├── runs_simplified.json   1,344 runs from the Case Study 2 grid
+    │   └── case1_validation.json  accuracy sweep for the Case 1 validation
+    │
+    └── annex_datasets/        Annex C: the Case 2 grid re-run on 4 toy datasets
+        ├── run_annex.py           full-grid runner (corners, circles, spiral, sinus)
+        ├── build_notebooks.py     regenerate the 4 per-dataset notebooks
+        ├── build_summary.py       regenerate summary.ipynb
+        ├── annex_<dataset>.ipynb  per-dataset replica of the Case 2 notebook
+        ├── summary.ipynb          the four datasets side by side
+        └── results/, figures/     cached runs + generated figures
 ```
 
 ---
@@ -122,16 +141,44 @@ notebook re-uses the same `results/runs_simplified.json` cache, regenerates
 every Case-Study-2 figure into `code/figures/`, and runs the SVM-RBF and
 trainable-VQC ablations of Table case2-ablation.
 
-### 5. Reproduce Case Study 1 (methodological validation)
+### 5. Reproduce Case Study 1
+
+Case Study 1 has two parts.
+
+**(a) Validation against a published reference.** Reproduce the test
+accuracy of a data-reuploading VQC on the `corners` and `circles`
+datasets of Rodriguez-Grasa, Ban & Sanz (arXiv:2401.04642) as a function
+of layers and qubits, next to that paper's published numbers, and print
+the LaTeX tables that justify the 2-qubit / few-layer choice carried into
+Case Study 2:
 
 ```bash
 cd code/
+python3 run_validation.py          # accuracy sweep -> results/case1_validation.json
+python3 make_case1_validation.py   # figures/case1-val-*.png + LaTeX tables
+```
+
+**(b) Autodiff vs parameter-shift, plus Bloch diagnostics.** Open the
+notebook and run all cells top to bottom (~5 min). It is self-contained,
+uses `make_moons(noise=0.1)` directly, and writes its figures into
+`code/figures/`:
+
+```bash
 jupyter lab VQC_Autodiff_and_ParameterShift.ipynb
 ```
 
-Run all cells top to bottom (~5 min). Self-contained; uses
-`make_moons(noise=0.1)` directly. Like Case Study 2, the notebook writes
-its figures into `code/figures/`.
+### 6. Reproduce the dataset-robustness annex (Annex C)
+
+`code/annex_datasets/` re-runs the **identical** Case Study 2 grid on
+four extra geometric datasets (`corners`, `circles`, `spiral`, `sinus`)
+to test whether the conclusion transfers off `make_moons`. The folder
+has its own README; in short:
+
+```bash
+cd code/annex_datasets/
+N_JOBS=12 python3 run_annex.py     # ~25-40 min on 12-16 cores; checkpointed
+jupyter lab summary.ipynb          # cross-dataset figures + advantage table
+```
 
 ---
 
@@ -173,7 +220,7 @@ for X, y in [(X1, y1), (X3, y3)]:
         print(f'{name:<16} BA={result.metrics["balanced_accuracy"]:.3f}')
 
 # The friedman_wilcoxon_holm helper consumes a list of RunResults and
-# returns the pre-registered statistical verdict per imbalance ratio.
+# returns the pre-registered statistical result per imbalance ratio.
 ```
 
 The point of the uniform `(QuantumModel | ClassicalModel) → run_one`

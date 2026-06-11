@@ -4,9 +4,9 @@ Threshold-independent robustness check for Case Study 2. Runs the same
 descriptive + pre-registered statistical machinery as analyse_results.py but
 on the ROC AUC byproduct instead of balanced accuracy, and contrasts the two.
 
-ROC AUC is NOT a pre-registered headline metric: it is reported in the thesis
-only as a control on the BA-based verdict, because the ablation shows that
-threshold tuning on the balanced validation set drives much of the headline BA
+ROC AUC is NOT a pre-registered primary metric: it is reported in the thesis
+only as a control on the BA-based conclusion, because the ablation shows that
+threshold tuning on the balanced validation set drives much of the primary BA
 at extreme imbalance. AUC removes thresholding from the picture entirely.
 """
 import os, sys, json

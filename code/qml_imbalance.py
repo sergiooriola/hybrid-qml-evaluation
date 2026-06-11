@@ -2,7 +2,7 @@
 qml_imbalance.py
 ================
 QML-vs-classical imbalanced-classification experiment library. Domain-specific
-glue layer that sits on top of `qml_core` (quantum primitives + parameter-shift
+layer that sits on top of `qml_core` (quantum primitives + parameter-shift
 training) and adds:
 
     Data
@@ -44,7 +44,7 @@ training) and adds:
         and the four confusion-matrix counts (tn, fp, fn, tp) are also returned
         as diagnostic free byproducts; they feed the failure-mode and
         robustness analyses of Section 3.2 but do not enter the pre-registered
-        verdict.
+        conclusion.
 
     Experiment runner
     -----------------
@@ -417,21 +417,21 @@ def tune_threshold(scores_val: np.ndarray, y_val: np.ndarray,
 
 def compute_metrics(y_true: np.ndarray, scores: np.ndarray, threshold: float
                     ) -> Dict[str, float]:
-    """Headline metric (balanced accuracy) plus confusion-matrix counts and
+    """Primary metric (balanced accuracy) plus confusion-matrix counts and
     a threshold-independent ranking diagnostic (ROC AUC).
 
     Balanced accuracy is the single primary metric of the thesis (Section 2.2.7,
     Module 5). The confusion-matrix counts (tn, fp, fn, tp) are retained as
     free byproducts that feed the failure-mode discussion of Section 3.2;
-    they do not enter the pre-registered verdict.
+    they do not enter the pre-registered conclusion.
 
     ROC AUC is computed on the *continuous* score (before thresholding) and is
     likewise a free byproduct: it measures how well the model ranks positive
     test points above negative ones, independently of any decision threshold.
-    It does not enter the pre-registered verdict either; it is reported in
+    It does not enter the pre-registered conclusion either; it is reported in
     Section 3.2 as a threshold-independent robustness check on the BA-based
     conclusions (the threshold tuner is shown there to drive a large share of
-    the headline BA at extreme imbalance, so a metric that removes thresholding
+    the primary BA at extreme imbalance, so a metric that removes thresholding
     from the picture is the natural control). The test set is always balanced,
     so both classes are present and the AUC is always well defined.
     """
@@ -627,7 +627,7 @@ def friedman_wilcoxon_holm(
     rest of the framework. The `metric` argument allows the identical paired
     protocol (Friedman omnibus + Holm-corrected pairwise Wilcoxon) to be run on
     the threshold-independent ROC AUC byproduct ('roc_auc') as the robustness
-    check of Section 3.2; the AUC run does not enter the pre-registered verdict.
+    check of Section 3.2; the AUC run does not enter the pre-registered conclusion.
 
     Parameters
     ----------

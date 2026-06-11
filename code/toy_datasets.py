@@ -19,7 +19,7 @@ form ``(X, y)`` with ``X`` of shape ``(N, 2)`` and ``y`` in ``{0, 1}``. The main
 study draws that base from scikit-learn's ``make_moons``; this module provides
 four drop-in alternatives so the same imbalance experiment can be re-run on
 geometrically different problems and we can check whether the quantum-vs-classical
-verdict transfers (thesis Annex).
+conclusion transfers (thesis Annex).
 
 Interface
 ---------

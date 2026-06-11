@@ -2,7 +2,7 @@
 
 This folder re-runs the Case Study 2 imbalance experiment
 (`../imbalance_experiments.ipynb`) on four geometrically different toy datasets,
-to show whether the quantum-vs-classical verdict obtained on `make_moons`
+to show whether the quantum-vs-classical conclusion obtained on `make_moons`
 **transfers** to other problems. It is meant to back a thesis annex.
 
 **The experiment is identical to the main study** -- same grid (2 noise levels x
@@ -58,7 +58,7 @@ for name in td.DATASETS:
 | `build_notebooks.py`       | regenerates the four `annex_<dataset>.ipynb` by transforming the original notebook |
 | `build_summary.py`         | regenerates `summary.ipynb`                                       |
 | `annex_<dataset>.ipynb`    | per-dataset replica of the Case Study 2 notebook (analysis byte-identical) |
-| `summary.ipynb`            | the four datasets side by side (headline annex figures + advantage table) |
+| `summary.ipynb`            | the four datasets side by side (main annex figures + advantage table) |
 | `results/annex_*.json`     | cached run records (created by `run_annex.py`; same format as the main study) |
 | `figures/`                 | figures saved by the notebooks (`<dataset>-case2-*.png`)          |
 
