@@ -160,9 +160,14 @@ def _apply_q1(states, g):
 def fast_vqc_fixed_states(w, X):
     """Fixed-encoding VQC.
 
-    w:  (18,)  or (B, 18)  parameters
+    w:  (16,)  or (B, 16)  parameters
     X:  (B, 2)              features
     Returns (B, 4) final state vectors before measurement.
+
+    Note: earlier versions appended a final RY rotation per qubit
+    (18 parameters). Two consecutive RY rotations on the same qubit
+    compose by angle addition, so that layer added parameters but no
+    expressivity; it was removed after the reference-circuit review.
     """
     B = X.shape[0]
     s = np.zeros((B, 4), dtype=np.complex128)
@@ -180,18 +185,20 @@ def fast_vqc_fixed_states(w, X):
         s = s * _CZ_DIAG
         s = _apply_q0(s, _ry_batch(w[..., j + 2]))
         s = _apply_q1(s, _ry_batch(w[..., j + 3]))
-    # Final rotation
-    s = _apply_q0(s, _ry_batch(w[..., 16]))
-    s = _apply_q1(s, _ry_batch(w[..., 17]))
     return s
 
 
 def fast_vqc_trainable_states(w, X):
     """Trainable-encoding VQC.
 
-    w:  (22,)  or (B, 22)  parameters; w[0..3] are encoding weights.
+    w:  (20,)  or (B, 20)  parameters; w[0..3] are encoding weights.
     X:  (B, 2)              features
     Returns (B, 4) final state vectors before measurement.
+
+    Note: earlier versions appended a final RY rotation per qubit
+    (22 parameters). Two consecutive RY rotations on the same qubit
+    compose by angle addition, so that layer added parameters but no
+    expressivity; it was removed after the reference-circuit review.
     """
     B = X.shape[0]
     s = np.zeros((B, 4), dtype=np.complex128)
@@ -209,9 +216,6 @@ def fast_vqc_trainable_states(w, X):
         s = s * _CZ_DIAG
         s = _apply_q0(s, _ry_batch(w[..., j + 2]))
         s = _apply_q1(s, _ry_batch(w[..., j + 3]))
-    # Final rotation
-    s = _apply_q0(s, _ry_batch(w[..., 20]))
-    s = _apply_q1(s, _ry_batch(w[..., 21]))
     return s
 
 
@@ -255,7 +259,7 @@ def fast_fixed_encoding_states(X):
 def fast_trainable_encoding_states(w, X):
     """Encoding block of the Trainable VQC, no variational layers.
 
-    w: (22,) or (B, 22)  parameters (only w[0..3] are used here)
+    w: (20,) or (B, 20)  parameters (only w[0..3] are used here)
     X: (B, 2). Returns (B, 4).
     """
     B = X.shape[0]

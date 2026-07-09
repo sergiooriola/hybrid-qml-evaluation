@@ -254,8 +254,8 @@ class QuantumModel:
     """
 
     SPEC = {
-        'fixed_vqc':       dict(circuit_type='fixed',     n_params=18),
-        'trainable_vqc':   dict(circuit_type='trainable', n_params=22),
+        'fixed_vqc':       dict(circuit_type='fixed',     n_params=16),
+        'trainable_vqc':   dict(circuit_type='trainable', n_params=20),
         'data_reuploading': dict(circuit_type='dr',        n_params=6),
     }
 
@@ -275,7 +275,7 @@ class QuantumModel:
         if self.name == 'data_reuploading':
             return rng.normal(0.0, 1.0, size=self.n_params) * np.pi
         elif self.name == 'trainable_vqc':
-            # Encoding weights at 1.0, variational + final block ~ pi*U[0,1]
+            # Encoding weights at 1.0, variational block ~ pi*U[0,1]
             params = np.empty(self.n_params)
             params[:4] = 1.0
             params[4:] = np.pi * rng.rand(self.n_params - 4)
@@ -333,7 +333,7 @@ class ClassicalModel:
     The capacity-matched MLP baseline ('mlp_small', one hidden layer of 4 ReLU
     units, ~17 trainable parameters) sits between the parameter counts of the
     extremes among the three quantum architectures (Data Reuploading at 6
-    params, Trainable VQC at 22 params), matching the Fixed VQC's 18 params.
+    params, Trainable VQC at 20 params), closest to the Fixed VQC's 16 params.
     """
 
     SPEC = {
