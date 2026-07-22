@@ -3,10 +3,10 @@
 This folder re-runs the Case Study 2 imbalance experiment
 (`../imbalance_experiments.ipynb`) on four geometrically different toy datasets,
 to show whether the quantum-vs-classical conclusion obtained on `make_moons`
-**transfers** to other problems. It is meant to back a thesis annex.
+**transfers** to other problems. It backs ANNEX C of the thesis.
 
 **The experiment is identical to the main study** -- same grid (2 noise levels x
-8 models x 7 ratios x 12 seeds = 1 344 runs/dataset), same models, same splits,
+12 models x 7 ratios x 12 seeds = 2 016 runs/dataset), same models, same splits,
 same hyperparameters, same analysis code and same statistical protocol
 (Friedman + Wilcoxon + Holm). Only the base dataset changes. The per-dataset
 notebooks are produced by *transforming* the original notebook (copying every
@@ -55,8 +55,6 @@ for name in td.DATASETS:
 |----------------------------|-------------------------------------------------------------------|
 | `../toy_datasets.py`       | the dataset library (lives next to `qml_core`/`qml_imbalance`)    |
 | `run_annex.py`             | full-grid parallel runner + cache loader (`CONFIG`, `load_records`) |
-| `build_notebooks.py`       | regenerates the four `annex_<dataset>.ipynb` by transforming the original notebook |
-| `build_summary.py`         | regenerates `summary.ipynb`                                       |
 | `annex_<dataset>.ipynb`    | per-dataset replica of the Case Study 2 notebook (analysis byte-identical) |
 | `summary.ipynb`            | the four datasets side by side (main annex figures + advantage table) |
 | `results/annex_*.json`     | cached run records (created by `run_annex.py`; same format as the main study) |
@@ -85,8 +83,9 @@ for name in td.DATASETS:
 
 ## Grid: identical to the main study
 
-The grid is **identical** to `code/run_experiments.py` (see `CONFIG` in
-`run_annex.py`), so the annex numbers are directly comparable to Case Study 2:
+The grid is **identical** to the main study's (`GRID_CONFIG` in
+`code/qml_imbalance.py`; see `CONFIG` in `run_annex.py`), so the annex
+numbers are directly comparable to Case Study 2:
 
 | knob          | main study and annex          |
 |---------------|-------------------------------|
@@ -94,13 +93,13 @@ The grid is **identical** to `code/run_experiments.py` (see `CONFIG` in
 | ratios        | 0.50, 0.60, 0.70, 0.80, 0.90, 0.95, 0.99 (7) |
 | seeds         | 12                            |
 | quantum iters | 200                           |
-| models        | 3 quantum + 5 classical (8)   |
-| runs/dataset  | 1 344                         |
+| models        | 6 quantum + 6 classical (12)  |
+| runs/dataset  | 2 016                         |
 
 **Why 12 seeds.** The pairwise Wilcoxon + Holm certification needs enough seeds
-for its discrete-distribution floor to fall below 0.05: with `k = 8` models the
-smallest Holm-adjusted p is `28 * 2/2^n`, equal to `0.0547` at `n = 10` (just
-above 0.05) and `0.0137` at `n = 12`. The study fixes `n = 12` (matching the
+for its discrete-distribution floor to fall below 0.05: with `k = 12` models the
+smallest Holm-adjusted p is `66 * 2/2^n`, equal to `0.129` at `n = 10` (above
+0.05) and `0.0322` at `n = 12`. The study fixes `n = 12` (matching the
 main study's pre-registered choice), so the protocol can certify pairs -- which
 is what makes the cross-dataset quantum-advantage table in `summary.ipynb`
 meaningful.

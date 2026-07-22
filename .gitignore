@@ -1,5 +1,9 @@
 # Personal manuscript — not part of the public release
 thesis/
+
+# Personal auxiliary files — not part of the public release
+_docs/
+
 # Claude assistant files
 .claude/
 

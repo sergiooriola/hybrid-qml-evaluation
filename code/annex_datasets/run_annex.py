@@ -3,7 +3,7 @@ run_annex.py
 ============
 Full-grid experiment runner for the *dataset-robustness annex* of Case Study 2.
 
-It runs the **exact same experiment** as `code/run_experiments.py` /
+It runs the **exact same experiment** as the main study grid driver (`python code/qml_imbalance.py`) /
 `code/imbalance_experiments.ipynb` -- same grid, same models, same splits, same
 hyperparameters -- but draws the balanced base pool from one of the four toy
 datasets of Appendix E.1 of arXiv:2401.04642 (sinus, corners, spiral, circles)
@@ -12,8 +12,8 @@ identical is what makes the annex numbers directly comparable to the main study,
 and the 12-seed budget is what lets the pairwise Wilcoxon+Holm protocol certify
 model pairs.
 
-Grid per dataset: 2 noise x 8 models x 7 ratios x 12 seeds = 1 344 runs
-(identical to the main study). Four datasets => 5 376 runs.
+Grid per dataset: 2 noise x 12 models x 7 ratios x 12 seeds = 2 016 runs
+(identical to the main study). Four datasets => 8 064 runs.
 
 Parallelism. Tasks are independent ``run_one`` calls keyed on
 (dataset, noise, model, ratio, seed), fanned out to ``joblib.Parallel`` (loky
@@ -29,7 +29,7 @@ Checkpointing. Per dataset, ``results/annex_<dataset>.json`` is written every
 CHUNK_SIZE tasks and re-read on startup; already-computed
 (noise, model, ratio, seed) tuples are skipped, so the run resumes after an
 interruption. The cache format matches the main study's
-``results/runs_simplified.json`` exactly, so the annex notebooks load it with
+``results/case2_grid.json`` exactly, so the annex notebooks load it with
 the same cell as the original.
 
 Public API (used by summary.ipynb)
@@ -63,7 +63,7 @@ import toy_datasets as td                # noqa: E402
 
 
 # =============================================================================
-# Configuration -- identical to code/run_experiments.py CONFIG
+# Configuration -- identical to GRID_CONFIG in code/qml_imbalance.py
 # =============================================================================
 
 CONFIG: Dict = dict(
@@ -75,8 +75,9 @@ CONFIG: Dict = dict(
     ratios           = [0.50, 0.60, 0.70, 0.80, 0.90, 0.95, 0.99],
     seeds            = list(range(12)),
     quantum_iter     = 200,
-    quantum_models   = ['data_reuploading', 'fixed_vqc', 'trainable_vqc'],
-    classical_models = ['logreg', 'svm_rbf', 'knn', 'rf', 'mlp_small'],
+    quantum_models   = ['data_reuploading', 'no_reuploading', 'fixed_vqc',
+                        'angle_vqc', 'reuploading_2q', 'trainable_vqc'],
+    classical_models = ['logreg', 'svm_rbf', 'svm_linear', 'knn', 'rf', 'mlp_small'],
     base_seed        = 42,
 )
 
@@ -173,8 +174,10 @@ def run_dataset(dataset: str, config: Dict = CONFIG,
             all_runs = json.load(f).get('runs', [])
     done = {(r['noise'], r['model'], r['ratio'], r['seed']) for r in all_runs}
 
-    fast_first = (['data_reuploading'] + config['classical_models']
-                  + ['fixed_vqc', 'trainable_vqc'])
+    fast_first = (['data_reuploading', 'no_reuploading']
+                  + config['classical_models']
+                  + ['fixed_vqc', 'angle_vqc', 'reuploading_2q',
+                     'trainable_vqc'])
     tasks = [(noise, m, ratio, seed)
              for noise in config['noise_levels']
              for m in fast_first

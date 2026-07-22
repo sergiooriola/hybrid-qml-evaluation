@@ -18,16 +18,17 @@ training) and adds:
         Cost-sensitive learning by per-sample weighting. Weights inversely
         proportional to class frequency (the scikit-learn `class_weight=
         "balanced"` convention). The framework intentionally supports
-        only this one handler: the case studies (Section 3 of the thesis)
+        only this one handler: the case studies (Chapters 4 and 5 of the thesis)
         compare quantum and classical models *as classifiers*, holding the
         imbalance-handling strategy fixed so that any observed gap is
         attributable to the model and not to the handler.
 
     Models (uniform interface for quantum and classical)
     ----------------------------------------------------
-    QuantumModel('fixed_vqc' | 'trainable_vqc' | 'data_reuploading',
+    QuantumModel('fixed_vqc' | 'trainable_vqc' | 'angle_vqc' |
+                 'data_reuploading' | 'reuploading_2q' | 'no_reuploading',
                  n_iter=200, lr=0.015)
-    ClassicalModel('logreg' | 'svm_rbf' | 'knn' | 'rf' | 'mlp_small')
+    ClassicalModel('logreg' | 'svm_rbf' | 'svm_linear' | 'knn' | 'rf' | 'mlp_small')
 
     Each model M exposes:
         M.name, M.kind ('quantum' or 'classical'), M.n_params
@@ -43,7 +44,7 @@ training) and adds:
         Primary metric: balanced_accuracy. The threshold-independent ROC AUC
         and the four confusion-matrix counts (tn, fp, fn, tp) are also returned
         as diagnostic free byproducts; they feed the failure-mode and
-        robustness analyses of Section 3.2 but do not enter the pre-registered
+        robustness analyses of Case Study II (Chapter 5) but do not enter the pre-registered
         conclusion.
 
     Experiment runner
@@ -57,10 +58,16 @@ training) and adds:
         Per imbalance level: Friedman omnibus + Wilcoxon signed-rank pairwise
         with Holm correction for multiple comparisons.
 
-The quantum core, training primitives (Adam, parameter-shift gradient,
-multi-seed runner) and Bloch-coordinate utilities live in `qml_core` and are
-re-exported here for backward compatibility with code that imports them from
-this module.
+    Production grid driver
+    ----------------------
+    GRID_CONFIG, run_grid()
+        `python qml_imbalance.py` generates (or resumes) the full Case
+        Study 2 grid — 2,016 runs — with joblib-parallel workers and
+        periodic checkpointing to results/case2_grid.json (Section 9).
+
+The quantum core and the training primitives (Adam, parameter-shift gradient,
+multi-seed runner) live in `qml_core`; this module imports only the four it
+calls (reset_counter, get_counter, fast_predict, train_ps_run).
 """
 
 from __future__ import annotations
@@ -79,23 +86,13 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import (balanced_accuracy_score, confusion_matrix,
                              roc_auc_score)
 
-# All the quantum/training primitives live in qml_core.
+# The quantum/training primitives live in qml_core; only the ones this
+# module actually calls are imported.
 from qml_core import (
-    # Counters
     reset_counter,
     get_counter,
-    # Quantum forwards
-    fast_states,
     fast_predict,
-    fast_vqc_fixed_states,
-    fast_vqc_trainable_states,
-    fast_dr_states,
-    # Optimisation / training
-    AdamOptimizer,
-    cost_np,
-    parameter_shift_gradient,
     train_ps_run,
-    train_ps_multi_seed,
 )
 
 
@@ -113,7 +110,7 @@ def make_balanced_dataset(n_total: int = 5000, noise: float = 0.1,
         noise = 0.3  -- substantial overlap; the Bayes-optimal classifier
                         sits well below 1.0 BA and no method can recover
                         the original geometry exactly.
-    Both noise levels are used in Section 3.2 of the thesis to test whether
+    Both noise levels are used in Case Study II of the thesis (Chapter 5) to test whether
     the conclusions transfer from a low-overlap (toy-like) setting to a
     higher-overlap regime where the geometry is much less benign.
     """
@@ -209,7 +206,7 @@ def labels_to_pm1(y: np.ndarray) -> np.ndarray:
 # proportional to class frequency (the convention behind scikit-learn's
 # class_weight="balanced"). Two reasons:
 #
-#  (i) the case studies (Section 3.2) compare quantum and classical models
+#  (i) the case studies (Case Study II, Chapter 5) compare quantum and classical models
 #      *as classifiers* and hold the handler fixed so the comparison is
 #      not confounded by handler-specific interactions;
 # (ii) class_weight is the cheapest handler in any framework that uses
@@ -247,16 +244,26 @@ class QuantumState:
 
 
 class QuantumModel:
-    """Uniform interface for the three quantum architectures.
+    """Uniform interface for the six quantum architectures.
+
+    The first three are the core thesis architectures; the last three
+    are controlled contrasts, each isolating one design choice: a plain
+    (non-dense) angle-encoding variant of the Fixed VQC, a two-qubit
+    entangled data-reuploading circuit, and a single-qubit
+    control that is identical to the Data Reuploading model except that
+    the data are not re-injected in each layer.
 
     n_iter and lr default to the values used throughout the thesis
-    (Section 2.2.5, Module 3); override per experiment if needed.
+    (Section 3.6, the training module); override per experiment if needed.
     """
 
     SPEC = {
-        'fixed_vqc':       dict(circuit_type='fixed',     n_params=16),
-        'trainable_vqc':   dict(circuit_type='trainable', n_params=20),
+        'fixed_vqc':        dict(circuit_type='fixed',     n_params=16),
+        'trainable_vqc':    dict(circuit_type='trainable', n_params=20),
         'data_reuploading': dict(circuit_type='dr',        n_params=6),
+        'angle_vqc':        dict(circuit_type='angle',     n_params=16),
+        'reuploading_2q':   dict(circuit_type='dr2q',      n_params=16),
+        'no_reuploading':   dict(circuit_type='nodr',      n_params=6),
     }
 
     def __init__(self, name: str, n_iter: int = 200, lr: float = 0.015):
@@ -272,7 +279,9 @@ class QuantumModel:
 
     def _init_params(self, seed: int) -> np.ndarray:
         rng = np.random.RandomState(seed)
-        if self.name == 'data_reuploading':
+        if self.name in ('data_reuploading', 'no_reuploading'):
+            # Same initialisation for the reuploading model and its
+            # no-reuploading control, so the ablation is initialisation-matched.
             return rng.normal(0.0, 1.0, size=self.n_params) * np.pi
         elif self.name == 'trainable_vqc':
             # Encoding weights at 1.0, variational block ~ pi*U[0,1]
@@ -332,13 +341,15 @@ class ClassicalModel:
 
     The capacity-matched MLP baseline ('mlp_small', one hidden layer of 4 ReLU
     units, ~17 trainable parameters) sits between the parameter counts of the
-    extremes among the three quantum architectures (Data Reuploading at 6
-    params, Trainable VQC at 20 params), closest to the Fixed VQC's 16 params.
+    extremes among the six quantum architectures (the single-qubit models at
+    6 params, Trainable VQC at 20 params), closest to the 16 params of the
+    Fixed, Angle and two-qubit Reuploading VQCs.
     """
 
     SPEC = {
         'logreg':     dict(n_params=3,    factory=lambda: LogisticRegression(max_iter=2000)),
-        'svm_rbf':    dict(n_params=None, factory=lambda: SVC(kernel='rbf', probability=False)),
+        'svm_rbf':    dict(n_params=None, factory=lambda: SVC(kernel='rbf')),
+        'svm_linear': dict(n_params=3,    factory=lambda: SVC(kernel='linear')),
         'mlp_small':  dict(n_params=17,   factory=lambda: MLPClassifier(
                               hidden_layer_sizes=(4,), max_iter=2000,
                               random_state=0, solver='adam')),
@@ -398,7 +409,7 @@ def tune_threshold(scores_val: np.ndarray, y_val: np.ndarray,
     """Sweep a threshold over the score range; return (best_threshold, best_BA).
 
     The objective is balanced accuracy on the validation set (the only metric
-    the framework optimises against; see Section 2.2.7, Module 5). y_val must be
+    the framework optimises against; see Section 3.8, the inference module). y_val must be
     in {0, 1}.
     """
     s_min, s_max = float(np.min(scores_val)), float(np.max(scores_val))
@@ -420,16 +431,16 @@ def compute_metrics(y_true: np.ndarray, scores: np.ndarray, threshold: float
     """Primary metric (balanced accuracy) plus confusion-matrix counts and
     a threshold-independent ranking diagnostic (ROC AUC).
 
-    Balanced accuracy is the single primary metric of the thesis (Section 2.2.7,
-    Module 5). The confusion-matrix counts (tn, fp, fn, tp) are retained as
-    free byproducts that feed the failure-mode discussion of Section 3.2;
+    Balanced accuracy is the single primary metric of the thesis (Section 3.8).
+    The confusion-matrix counts (tn, fp, fn, tp) are retained as
+    free byproducts that feed the failure-mode discussion of Chapter 5;
     they do not enter the pre-registered conclusion.
 
     ROC AUC is computed on the *continuous* score (before thresholding) and is
     likewise a free byproduct: it measures how well the model ranks positive
     test points above negative ones, independently of any decision threshold.
     It does not enter the pre-registered conclusion either; it is reported in
-    Section 3.2 as a threshold-independent robustness check on the BA-based
+    Chapter 5 as a threshold-independent robustness check on the BA-based
     conclusions (the threshold tuner is shown there to drive a large share of
     the primary BA at extreme imbalance, so a metric that removes thresholding
     from the picture is the natural control). The test set is always balanced,
@@ -528,7 +539,7 @@ def aggregate(results: List[RunResult],
     Balanced accuracy is the primary aggregated metric (the default). The
     `metric` argument allows the same aggregation to run on the
     threshold-independent ROC AUC byproduct ('roc_auc') for the robustness
-    check of Section 3.2. The aggregated columns are always named
+    check of Chapter 5. The aggregated columns are always named
     ``balanced_accuracy_mean`` / ``balanced_accuracy_std`` regardless of the
     metric requested, so that the plotting and table helpers downstream do not
     need to branch on the metric name. The confusion-matrix counts
@@ -583,11 +594,12 @@ def aggregate(results: List[RunResult],
 #      identical FWER control but uniformly greater power.
 #
 # Note on minimum seeds. The discrete distribution of the Wilcoxon signed-rank
-# test has a smallest two-sided p-value of 2 / 2^n at n seeds. With k = 8
-# models the family contains k(k-1)/2 = 28 pairs, and at n = 10 the smallest
-# Holm-adjusted p is 28 * 0.00195 = 0.0547, *just above* alpha = 0.05. The
-# thesis therefore uses n >= 12 seeds, which lifts the floor to
-# 28 * 2 / 2^12 = 0.0137 << 0.05 and allows the protocol to certify pairs.
+# test has a smallest two-sided p-value of 2 / 2^n at n seeds. With k = 12
+# models the family contains k(k-1)/2 = 66 pairs, and at n = 10 the smallest
+# Holm-adjusted p is 66 * 0.00195 = 0.129, *above* alpha = 0.05. The
+# thesis therefore uses n >= 12 seeds, which lowers the floor to
+# 66 * 2 / 2^12 = 0.0322 < 0.05 and allows the protocol to certify pairs.
+# (With the original k = 8 model set the floor was 28 * 2 / 2^12 = 0.0137.)
 #
 # This module implements all three tests using only scipy (no statsmodels
 # dependency); Holm's step-down adjustment is short enough to implement directly.
@@ -627,7 +639,7 @@ def friedman_wilcoxon_holm(
     rest of the framework. The `metric` argument allows the identical paired
     protocol (Friedman omnibus + Holm-corrected pairwise Wilcoxon) to be run on
     the threshold-independent ROC AUC byproduct ('roc_auc') as the robustness
-    check of Section 3.2; the AUC run does not enter the pre-registered conclusion.
+    check of Chapter 5; the AUC run does not enter the pre-registered conclusion.
 
     Parameters
     ----------
@@ -753,3 +765,139 @@ def print_friedman_summary(stats: Dict, alpha: float = 0.05) -> None:
               f"{d['wilcoxon_p_holm']:>9.4g} {flag}")
     print("  (* = Holm-adjusted p < alpha, i.e. the median of paired "
           "differences is significantly different from zero after FWER control.)")
+
+
+# =============================================================================
+# 9. Production grid driver:  python qml_imbalance.py
+# =============================================================================
+#
+# Generates the experimental data for Case Study 2 of the thesis: 2 noise
+# levels x 12 models x 7 ratios x 12 seeds = 2,016 runs, with joblib-parallel
+# task execution and periodic JSON checkpointing to results/case2_grid.json.
+#
+# Parallelism. Tasks are independent (each is a fully self-contained
+# ``run_one`` call keyed on (model, ratio, seed)), so the driver fans them
+# out to ``joblib.Parallel`` workers using the loky process-based backend
+# (threading would be serialised by Python's GIL on the NumPy-bound
+# forwards). Every random source inside ``run_one`` is keyed on
+# (seed, ratio), so per-task results are bit-identical regardless of the
+# worker count and of completion order. Set the workers with N_JOBS:
+#
+#     N_JOBS=1  python qml_imbalance.py   # sequential (default, reference)
+#     N_JOBS=-1 python qml_imbalance.py   # joblib auto = all cores
+#
+# Checkpointing. results/case2_grid.json is rewritten atomically after every
+# chunk of completed tasks and re-read on startup; already-computed
+# (noise, model, ratio, seed) tuples are skipped, so the full grid resumes
+# after any interruption.
+
+GRID_CONFIG = {
+    'noise_levels': [0.1, 0.3],
+    'n_total_base': 8000,
+    'n_train': 500, 'n_val': 400, 'n_test': 1200,
+    'ratios': [0.50, 0.60, 0.70, 0.80, 0.90, 0.95, 0.99],
+    'seeds': list(range(12)),  # 12 seeds keeps the Wilcoxon+Holm floor < alpha
+    'quantum_iter': 200,
+    'quantum_models': ['data_reuploading', 'no_reuploading', 'fixed_vqc',
+                       'angle_vqc', 'reuploading_2q', 'trainable_vqc'],
+    'classical_models': ['logreg', 'svm_rbf', 'svm_linear', 'knn', 'rf', 'mlp_small'],
+    'handler': 'class_weight',
+    'tune_metric': 'balanced_accuracy',
+}
+
+
+def _grid_task(noise, mname, ratio, seed):
+    """One (noise, model, ratio, seed) experiment as a serialisable dict.
+
+    Regenerates the base dataset inside the worker rather than receiving it
+    as an argument: ``make_balanced_dataset`` is sub-millisecond, which
+    beats repickling a 16k-float array on every job dispatch.
+    """
+    c = GRID_CONFIG
+    X, y = make_balanced_dataset(n_total=c['n_total_base'], noise=noise, seed=42)
+    model = (QuantumModel(mname, n_iter=c['quantum_iter'])
+             if mname in QuantumModel.SPEC
+             else ClassicalModel(mname))
+    r = run_one(model, ratio=ratio, seed=seed, X_base=X, y_base=y,
+                n_train=c['n_train'], n_val=c['n_val'], n_test=c['n_test'])
+    return {
+        'noise': noise,
+        'model': r.model, 'ratio': r.ratio, 'seed': r.seed,
+        'metrics': r.metrics, 'threshold': r.threshold,
+        'fit_time_s': r.fit_time_s, 'n_circuit_evals': r.n_circuit_evals,
+        'n_train_majority': r.n_train_majority,
+        'n_train_minority': r.n_train_minority,
+    }
+
+
+def run_grid(out_path: Optional[str] = None,
+             chunk_size: int = 8,
+             n_jobs: Optional[int] = None) -> None:
+    """Run (or resume) the full Case Study 2 grid with checkpointing."""
+    import os
+    import json
+    from joblib import Parallel, delayed
+
+    c = GRID_CONFIG
+    if out_path is None:
+        out_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                'results', 'case2_grid.json')
+    if n_jobs is None:
+        n_jobs = int(os.environ.get('N_JOBS', '1'))
+
+    all_runs: List[dict] = []
+    if os.path.exists(out_path):
+        with open(out_path) as f:
+            all_runs.extend(json.load(f).get('runs', []))
+        print(f'Resumed: loaded {len(all_runs)} runs from {out_path}')
+    done = {(r['noise'], r['model'], r['ratio'], r['seed']) for r in all_runs}
+
+    # Fast models first, so an interrupted grid is still interpretable.
+    fast_first = (['data_reuploading', 'no_reuploading'] + c['classical_models']
+                  + ['fixed_vqc', 'angle_vqc', 'reuploading_2q',
+                     'trainable_vqc'])
+    tasks = [(noise, m, ratio, seed)
+             for noise in c['noise_levels'] for m in fast_first
+             for ratio in c['ratios'] for seed in c['seeds']
+             if (noise, m, ratio, seed) not in done]
+
+    print(f'Already done : {len(done)}')
+    print(f'Remaining    : {len(tasks)}')
+    print(f'Workers      : N_JOBS={n_jobs}'
+          + ('  [sequential, bit-identical to reference]' if n_jobs == 1 else ''))
+    if not tasks:
+        print('All tasks done; nothing to do.')
+        return
+
+    def save_checkpoint():
+        os.makedirs(os.path.dirname(out_path), exist_ok=True)
+        with open(out_path + '.tmp', 'w') as f:
+            json.dump({'config': GRID_CONFIG, 'runs': all_runs},
+                      f, indent=1, default=float)
+        os.replace(out_path + '.tmp', out_path)
+
+    t_start = time.time()
+    n_done = 0
+    pool = Parallel(n_jobs=n_jobs, backend='loky', batch_size=1)
+    for start in range(0, len(tasks), chunk_size):
+        chunk = tasks[start:start + chunk_size]
+        results = pool(delayed(_grid_task)(*t) for t in chunk)
+        all_runs.extend(results)
+        save_checkpoint()
+        n_done += len(results)
+        elapsed = time.time() - t_start
+        eta = elapsed / n_done * (len(tasks) - n_done)
+        last = results[-1]
+        print(f'  [{n_done:4d}/{len(tasks)}] noise={last["noise"]} '
+              f'{last["model"]:<18s} r={last["ratio"]:.2f} seed={last["seed"]:>2d}  '
+              f'BA={last["metrics"]["balanced_accuracy"]:.3f}  '
+              f'(elapsed {elapsed/60:.1f}m, ETA {eta/60:.1f}m)  '
+              f'[checkpoint -> {out_path}]')
+
+    print(f'\nDone. Generated {len(tasks)} new runs in '
+          f'{(time.time() - t_start)/60:.1f} min.')
+    print(f'Total runs (cached + new): {len(all_runs)} -> {out_path}')
+
+
+if __name__ == '__main__':
+    run_grid()

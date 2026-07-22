@@ -7,7 +7,10 @@ Shared quantum-classical core for the evaluation framework. Contains:
     ------------------
     fast_vqc_fixed_states(w, X)        -> (B, 4) state batch
     fast_vqc_trainable_states(w, X)    -> (B, 4)
+    fast_vqc_angle_states(w, X)        -> (B, 4)
     fast_dr_states(w, X)               -> (B, 2)
+    fast_dr2q_states(w, X)             -> (B, 4)
+    fast_nodr_states(w, X)             -> (B, 2)
     fast_fixed_encoding_states(X)      -> (B, 4)        (encoding only)
     fast_trainable_encoding_states(w, X) -> (B, 4)      (encoding only)
     fast_z0(states)                    -> (B,) <Z_0> in [-1, 1]
@@ -163,11 +166,6 @@ def fast_vqc_fixed_states(w, X):
     w:  (16,)  or (B, 16)  parameters
     X:  (B, 2)              features
     Returns (B, 4) final state vectors before measurement.
-
-    Note: earlier versions appended a final RY rotation per qubit
-    (18 parameters). Two consecutive RY rotations on the same qubit
-    compose by angle addition, so that layer added parameters but no
-    expressivity; it was removed after the reference-circuit review.
     """
     B = X.shape[0]
     s = np.zeros((B, 4), dtype=np.complex128)
@@ -194,11 +192,6 @@ def fast_vqc_trainable_states(w, X):
     w:  (20,)  or (B, 20)  parameters; w[0..3] are encoding weights.
     X:  (B, 2)              features
     Returns (B, 4) final state vectors before measurement.
-
-    Note: earlier versions appended a final RY rotation per qubit
-    (22 parameters). Two consecutive RY rotations on the same qubit
-    compose by angle addition, so that layer added parameters but no
-    expressivity; it was removed after the reference-circuit review.
     """
     B = X.shape[0]
     s = np.zeros((B, 4), dtype=np.complex128)
@@ -233,6 +226,100 @@ def fast_dr_states(w, X):
         gate = _ry_batch(X[:, 0] + w[..., 2 * i])
         s = np.einsum('bij,bj->bi', gate, s)
         gate = _rz_batch(X[:, 1] + w[..., 2 * i + 1])
+        s = np.einsum('bij,bj->bi', gate, s)
+    return s
+
+
+def fast_vqc_angle_states(w, X):
+    """Fixed VQC with plain (non-dense) angle encoding: one feature per qubit.
+
+    The encoding block is RY(x0) on qubit 0 and RY(x1) on qubit 1, so each
+    qubit carries a single feature, in contrast with the dense angle
+    encoding of the Fixed VQC where both features are written onto both
+    qubits (RY(x0) then RZ(x1) on each). The variational block is
+    identical to the Fixed VQC's.
+
+    w:  (16,)  or (B, 16)  parameters
+    X:  (B, 2)              features
+    Returns (B, 4) final state vectors before measurement.
+    """
+    B = X.shape[0]
+    s = np.zeros((B, 4), dtype=np.complex128)
+    s[:, 0] = 1.0
+    # Plain angle encoding (no trainable parameters, one feature per qubit)
+    s = _apply_q0(s, _ry_batch(X[:, 0]))
+    s = _apply_q1(s, _ry_batch(X[:, 1]))
+    # 4 variational layers
+    for i in range(4):
+        j = i * 4
+        s = _apply_q0(s, _ry_batch(w[..., j]))
+        s = _apply_q1(s, _ry_batch(w[..., j + 1]))
+        s = s * _CZ_DIAG
+        s = _apply_q0(s, _ry_batch(w[..., j + 2]))
+        s = _apply_q1(s, _ry_batch(w[..., j + 3]))
+    return s
+
+
+def fast_dr2q_states(w, X):
+    """Two-qubit Data Reuploading with entanglement.
+
+    Dense angle encoding, then four layers in which the data re-enters
+    additively after the CZ: the second RY of each layer rotates by
+    w + x0 on both qubits and the layer closes with RZ(x1) on both.
+    Combines the dense encoding and entangling block of the Fixed VQC
+    with the per-layer re-injection of the Data Reuploading model.
+
+    w:  (16,)  or (B, 16)  parameters
+    X:  (B, 2)              features
+    Returns (B, 4) final state vectors before measurement.
+    """
+    B = X.shape[0]
+    s = np.zeros((B, 4), dtype=np.complex128)
+    s[:, 0] = 1.0
+    # Dense angle encoding (no trainable parameters)
+    s = _apply_q0(s, _ry_batch(X[:, 0]))
+    s = _apply_q1(s, _ry_batch(X[:, 0]))
+    s = _apply_q0(s, _rz_batch(X[:, 1]))
+    s = _apply_q1(s, _rz_batch(X[:, 1]))
+    # 4 variational layers with additive data re-injection
+    for i in range(4):
+        j = i * 4
+        s = _apply_q0(s, _ry_batch(w[..., j]))
+        s = _apply_q1(s, _ry_batch(w[..., j + 1]))
+        s = s * _CZ_DIAG
+        s = _apply_q0(s, _ry_batch(w[..., j + 2] + X[:, 0]))
+        s = _apply_q1(s, _ry_batch(w[..., j + 3] + X[:, 0]))
+        s = _apply_q0(s, _rz_batch(X[:, 1]))
+        s = _apply_q1(s, _rz_batch(X[:, 1]))
+    return s
+
+
+def fast_nodr_states(w, X):
+    """Single qubit WITHOUT data reuploading (control for `fast_dr_states`).
+
+    The data enter once, through an initial RY(x0), RZ(x1) encoding block;
+    the three variational layers that follow are purely parametric
+    (RY(w), RZ(w)). Same qubit count, layer count, gate sequence and
+    parameter count as the Data Reuploading model; the only difference is
+    that the features are not re-injected in each layer.
+
+    w: (6,)  or (B, 6)  parameters
+    X: (B, 2)            features
+    Returns (B, 2) final state vectors (one qubit) before measurement.
+    """
+    B = X.shape[0]
+    s = np.zeros((B, 2), dtype=np.complex128)
+    s[:, 0] = 1.0
+    # Encoding block (data enter here and only here)
+    gate = _ry_batch(X[:, 0])
+    s = np.einsum('bij,bj->bi', gate, s)
+    gate = _rz_batch(X[:, 1])
+    s = np.einsum('bij,bj->bi', gate, s)
+    # 3 purely parametric layers
+    for i in range(3):
+        gate = _ry_batch(np.broadcast_to(w[..., 2 * i], (B,)))
+        s = np.einsum('bij,bj->bi', gate, s)
+        gate = _rz_batch(np.broadcast_to(w[..., 2 * i + 1], (B,)))
         s = np.einsum('bij,bj->bi', gate, s)
     return s
 
@@ -295,12 +382,19 @@ def fast_z0(states):
 def fast_states(theta, X, circuit_type: str = 'fixed') -> np.ndarray:
     """Dispatch to the appropriate full-circuit forward.
 
-    circuit_type: 'fixed' | 'trainable' | 'dr' | 'fixed_encoding' | 'trainable_encoding'
+    circuit_type: 'fixed' | 'trainable' | 'angle' | 'dr' | 'dr2q' | 'nodr'
+                  | 'fixed_encoding' | 'trainable_encoding'
     """
     if circuit_type == 'dr':
         return fast_dr_states(theta, X)
     if circuit_type == 'trainable':
         return fast_vqc_trainable_states(theta, X)
+    if circuit_type == 'angle':
+        return fast_vqc_angle_states(theta, X)
+    if circuit_type == 'dr2q':
+        return fast_dr2q_states(theta, X)
+    if circuit_type == 'nodr':
+        return fast_nodr_states(theta, X)
     if circuit_type == 'fixed_encoding':
         return fast_fixed_encoding_states(X)
     if circuit_type == 'trainable_encoding':

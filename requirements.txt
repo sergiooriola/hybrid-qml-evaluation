@@ -12,7 +12,7 @@
 #   pip install -r requirements.txt
 #
 # Or, if you only want to run the parameter-shift path of the framework
-# (Case Study 2), install only the entries marked [PS] below — that path
+# (Case Study II), install only the entries marked [PS] below — that path
 # is dependency-light and does not need Qibo or PyTorch.
 # -----------------------------------------------------------------------------
 
@@ -23,14 +23,14 @@ scipy>=1.10,<2.0
 # Classical ML baselines and metrics                       [PS] [AD]
 scikit-learn>=1.3,<2.0
 
-# Parallel experiment runner (Case Study 2 grid)           [PS]
+# Parallel experiment runner (Case Study II grid)           [PS]
 joblib>=1.3,<2.0
 
 # Plotting                                                 [PS] [AD]
 matplotlib>=3.7,<4.0
 plotly>=5.15,<7.0
 
-# Interactive widgets (Bloch slider in Notebook 1)              [AD]
+# Interactive widgets (Bloch slider in the Case Study I notebook)              [AD]
 ipywidgets>=8.0,<9.0
 
 # Jupyter kernel and notebook UI                           [PS] [AD]
@@ -38,8 +38,8 @@ jupyter>=1.0
 jupyterlab>=4.0
 
 # Quantum simulator + autodifferentiation                       [AD]
-# These are exercised ONLY by the Qibo+PyTorch path of Case Study 1 in
-# Notebook 1 (Cells 18, 20, and the AD training loops). Case Study 2
+# These are exercised ONLY by the Qibo+PyTorch (autodiff) cells of the
+# Case Study I notebook. Case Study II
 # (the imbalance grid) does not import them.
 qibo>=0.2.6,<0.3
 qiboml>=0.0.1,<0.1
@@ -56,6 +56,6 @@ tensorflow>=2.13,<3.0
 #
 #   pip install torch --index-url https://download.pytorch.org/whl/cu130
 #
-# The parameter-shift path (Case Study 2) is CPU-only by design and does
+# The parameter-shift path (Case Study II) is CPU-only by design and does
 # not benefit from GPU acceleration: the per-circuit kernel is too small
 # for the dispatch overhead of GPU launches to be worth it.
