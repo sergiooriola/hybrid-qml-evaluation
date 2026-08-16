@@ -1,0 +1,55 @@
+{
+  "h": 1e-05,
+  "n_train": 120,
+  "n_draws": 5,
+  "rows": [
+    {
+      "circuit": "fixed",
+      "n_params": 16,
+      "max_abs_err": 3.938205317410848e-11,
+      "max_rel_err": 1.981850136306631e-09,
+      "worst_param_index": 14,
+      "model": "fixed_vqc"
+    },
+    {
+      "circuit": "trainable",
+      "n_params": 20,
+      "max_abs_err": 2.8307889365919436e-10,
+      "max_rel_err": 1.653713516493641e-09,
+      "worst_param_index": 0,
+      "model": "trainable_vqc"
+    },
+    {
+      "circuit": "angle",
+      "n_params": 16,
+      "max_abs_err": 3.335537401838451e-11,
+      "max_rel_err": 1.0821735228217333e-09,
+      "worst_param_index": 14,
+      "model": "angle_vqc"
+    },
+    {
+      "circuit": "dr",
+      "n_params": 6,
+      "max_abs_err": 3.2898794799507414e-11,
+      "max_rel_err": 1.3336922584452426e-09,
+      "worst_param_index": 2,
+      "model": "data_reuploading"
+    },
+    {
+      "circuit": "dr2q",
+      "n_params": 16,
+      "max_abs_err": 2.932477871642192e-11,
+      "max_rel_err": 4.388681084853126e-09,
+      "worst_param_index": 11,
+      "model": "reuploading_2q"
+    },
+    {
+      "circuit": "nodr",
+      "n_params": 6,
+      "max_abs_err": 3.574113227600151e-11,
+      "max_rel_err": 1.1744170604452693e-10,
+      "worst_param_index": 1,
+      "model": "no_reuploading"
+    }
+  ]
+}

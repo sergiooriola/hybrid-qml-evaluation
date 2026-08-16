@@ -21,3 +21,10 @@ env/
 # OS / editor
 .DS_Store
 Thumbs.db
+
+# Superseded pre-run grid snapshots (kept locally, not part of the release)
+*.backup.json
+
+# Superseded grid snapshots kept locally, not part of the release
+*.pre-shared
+*.pre-splitfix

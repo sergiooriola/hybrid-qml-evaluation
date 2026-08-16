@@ -1,0 +1,397 @@
+{
+ "totals": {
+  "shared": 26,
+  "asymmetric": 29
+ },
+ "detail": {
+  "shared": [
+   {
+    "noise": 0.1,
+    "ratio": 0.5,
+    "quantum": "reuploading_2q",
+    "classical": "logreg",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.5,
+    "quantum": "reuploading_2q",
+    "classical": "svm_linear",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.5,
+    "quantum": "trainable_vqc",
+    "classical": "logreg",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.5,
+    "quantum": "trainable_vqc",
+    "classical": "svm_linear",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.6,
+    "quantum": "reuploading_2q",
+    "classical": "logreg",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.6,
+    "quantum": "reuploading_2q",
+    "classical": "svm_linear",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.6,
+    "quantum": "trainable_vqc",
+    "classical": "logreg",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.6,
+    "quantum": "trainable_vqc",
+    "classical": "svm_linear",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.7,
+    "quantum": "reuploading_2q",
+    "classical": "logreg",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.7,
+    "quantum": "reuploading_2q",
+    "classical": "svm_linear",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.7,
+    "quantum": "trainable_vqc",
+    "classical": "logreg",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.7,
+    "quantum": "trainable_vqc",
+    "classical": "svm_linear",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.8,
+    "quantum": "reuploading_2q",
+    "classical": "logreg",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.8,
+    "quantum": "reuploading_2q",
+    "classical": "svm_linear",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.8,
+    "quantum": "trainable_vqc",
+    "classical": "logreg",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.8,
+    "quantum": "trainable_vqc",
+    "classical": "svm_linear",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.9,
+    "quantum": "trainable_vqc",
+    "classical": "logreg",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.9,
+    "quantum": "trainable_vqc",
+    "classical": "svm_linear",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.9,
+    "quantum": "trainable_vqc",
+    "classical": "mlp_small",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.93,
+    "quantum": "trainable_vqc",
+    "classical": "logreg",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.93,
+    "quantum": "trainable_vqc",
+    "classical": "svm_linear",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.93,
+    "quantum": "trainable_vqc",
+    "classical": "mlp_small",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.95,
+    "quantum": "trainable_vqc",
+    "classical": "logreg",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.95,
+    "quantum": "trainable_vqc",
+    "classical": "svm_linear",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.96,
+    "quantum": "trainable_vqc",
+    "classical": "logreg",
+    "p_holm": 0.03662109375
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.96,
+    "quantum": "trainable_vqc",
+    "classical": "svm_linear",
+    "p_holm": 0.0322265625
+   }
+  ],
+  "asymmetric": [
+   {
+    "noise": 0.1,
+    "ratio": 0.5,
+    "quantum": "reuploading_2q",
+    "classical": "logreg",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.5,
+    "quantum": "reuploading_2q",
+    "classical": "svm_linear",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.5,
+    "quantum": "trainable_vqc",
+    "classical": "logreg",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.5,
+    "quantum": "trainable_vqc",
+    "classical": "svm_linear",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.6,
+    "quantum": "reuploading_2q",
+    "classical": "logreg",
+    "p_holm": 0.03955078125
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.6,
+    "quantum": "reuploading_2q",
+    "classical": "svm_linear",
+    "p_holm": 0.03955078125
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.6,
+    "quantum": "trainable_vqc",
+    "classical": "logreg",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.6,
+    "quantum": "trainable_vqc",
+    "classical": "svm_linear",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.7,
+    "quantum": "reuploading_2q",
+    "classical": "logreg",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.7,
+    "quantum": "reuploading_2q",
+    "classical": "svm_linear",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.7,
+    "quantum": "trainable_vqc",
+    "classical": "logreg",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.7,
+    "quantum": "trainable_vqc",
+    "classical": "svm_linear",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.8,
+    "quantum": "reuploading_2q",
+    "classical": "logreg",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.8,
+    "quantum": "reuploading_2q",
+    "classical": "svm_linear",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.8,
+    "quantum": "trainable_vqc",
+    "classical": "logreg",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.8,
+    "quantum": "trainable_vqc",
+    "classical": "svm_linear",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.9,
+    "quantum": "trainable_vqc",
+    "classical": "logreg",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.9,
+    "quantum": "trainable_vqc",
+    "classical": "svm_linear",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.93,
+    "quantum": "reuploading_2q",
+    "classical": "mlp_small",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.93,
+    "quantum": "trainable_vqc",
+    "classical": "logreg",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.93,
+    "quantum": "trainable_vqc",
+    "classical": "svm_linear",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.93,
+    "quantum": "trainable_vqc",
+    "classical": "mlp_small",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.95,
+    "quantum": "trainable_vqc",
+    "classical": "logreg",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.95,
+    "quantum": "trainable_vqc",
+    "classical": "svm_linear",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.95,
+    "quantum": "trainable_vqc",
+    "classical": "mlp_small",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.96,
+    "quantum": "trainable_vqc",
+    "classical": "logreg",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.96,
+    "quantum": "trainable_vqc",
+    "classical": "svm_linear",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.96,
+    "quantum": "trainable_vqc",
+    "classical": "mlp_small",
+    "p_holm": 0.0322265625
+   },
+   {
+    "noise": 0.1,
+    "ratio": 0.99,
+    "quantum": "angle_vqc",
+    "classical": "mlp_small",
+    "p_holm": 0.03369140625
+   }
+  ]
+ }
+}

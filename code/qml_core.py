@@ -299,9 +299,16 @@ def fast_nodr_states(w, X):
 
     The data enter once, through an initial RY(x0), RZ(x1) encoding block;
     the three variational layers that follow are purely parametric
-    (RY(w), RZ(w)). Same qubit count, layer count, gate sequence and
-    parameter count as the Data Reuploading model; the only difference is
-    that the features are not re-injected in each layer.
+    (RY(w), RZ(w)). Same qubit count, layer count, parameter count and
+    initialisation as the Data Reuploading model, and the difference of
+    interest is that the features are not re-injected in each layer.
+
+    Note that the two circuits do NOT match on gate count: the separate
+    encoding block makes this one eight gates against the Data Reuploading
+    model's six. An exactly depth-matched control would fold the encoding
+    into the first layer, as RY(x0 + w0), RZ(x1 + w1). The pair as written
+    compares two related single-qubit designs rather than isolating
+    re-injection with everything else held fixed.
 
     w: (6,)  or (B, 6)  parameters
     X: (B, 2)            features
@@ -417,10 +424,15 @@ def state_to_bloch_batch(states, qubit: int = 0) -> np.ndarray:
     states: (B, 2) for 1-qubit, (B, 4) for 2-qubit.
     Returns (B, 3) array of (rx, ry, rz) Bloch coordinates.
 
-    For 2-qubit input, the partial trace over the other qubit is computed
-    automatically. The resulting reduced density matrix is converted to a
-    Bloch vector via the standard formula
+    The coordinates are the expectation values (<X_k>, <Y_k>, <Z_k>) of the
+    three Pauli observables acting on qubit `qubit`, with the identity on
+    the other qubit. They are computed here by contracting the state's
+    indices over the other qubit, which is the same thing written as a
+    matrix: the contraction is the partial trace, and the intermediate
+    `rho` below is the reduced density matrix, from which
         rx = 2 Re(rho_01),  ry = 2 Im(rho_10),  rz = rho_00 - rho_11.
+    Entanglement makes the resulting vector shorter than one, placing the
+    qubit inside the Bloch sphere rather than on its surface.
     """
     if states.shape[-1] == 2:
         rho_00 = (states[:, 0] * states[:, 0].conj()).real

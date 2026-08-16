@@ -1,0 +1,18 @@
+{
+ "svm_rbf|0.1|cw+tt": 0.9747222222222222,
+ "trainable_vqc|0.1|cw+tt": 0.8622916666666667,
+ "svm_rbf|0.1|cw only": 0.9138194444444445,
+ "trainable_vqc|0.1|cw only": 0.8641666666666665,
+ "svm_rbf|0.1|tt only": 0.9658333333333333,
+ "trainable_vqc|0.1|tt only": 0.7835416666666666,
+ "svm_rbf|0.1|neither": 0.6800694444444445,
+ "trainable_vqc|0.1|neither": 0.7147916666666667,
+ "svm_rbf|0.3|cw+tt": 0.8244444444444445,
+ "trainable_vqc|0.3|cw+tt": 0.7135416666666666,
+ "svm_rbf|0.3|cw only": 0.7697916666666665,
+ "trainable_vqc|0.3|cw only": 0.715,
+ "svm_rbf|0.3|tt only": 0.7555555555555556,
+ "trainable_vqc|0.3|tt only": 0.6352083333333334,
+ "svm_rbf|0.3|neither": 0.5061805555555555,
+ "trainable_vqc|0.3|neither": 0.626875
+}

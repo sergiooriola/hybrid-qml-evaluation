@@ -6,7 +6,7 @@ to show whether the quantum-vs-classical conclusion obtained on `make_moons`
 **transfers** to other problems. It backs ANNEX C of the thesis.
 
 **The experiment is identical to the main study** -- same grid (2 noise levels x
-12 models x 7 ratios x 12 seeds = 2 016 runs/dataset), same models, same splits,
+12 models x 10 ratios x 12 seeds = 2 880 runs/dataset), same models, same splits,
 same hyperparameters, same analysis code and same statistical protocol
 (Friedman + Wilcoxon + Holm). Only the base dataset changes. The per-dataset
 notebooks are produced by *transforming* the original notebook (copying every
@@ -90,11 +90,11 @@ numbers are directly comparable to Case Study 2:
 | knob          | main study and annex          |
 |---------------|-------------------------------|
 | noise levels  | 0.1, 0.3                      |
-| ratios        | 0.50, 0.60, 0.70, 0.80, 0.90, 0.95, 0.99 (7) |
+| ratios        | 0.50, 0.60, 0.70, 0.80, 0.90, 0.93, 0.95, 0.96, 0.98, 0.99 (10) |
 | seeds         | 12                            |
 | quantum iters | 200                           |
 | models        | 6 quantum + 6 classical (12)  |
-| runs/dataset  | 2 016                         |
+| runs/dataset  | 2 880                         |
 
 **Why 12 seeds.** The pairwise Wilcoxon + Holm certification needs enough seeds
 for its discrete-distribution floor to fall below 0.05: with `k = 12` models the

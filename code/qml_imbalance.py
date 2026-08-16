@@ -62,7 +62,7 @@ training) and adds:
     ----------------------
     GRID_CONFIG, run_grid()
         `python qml_imbalance.py` generates (or resumes) the full Case
-        Study 2 grid — 2,016 runs — with joblib-parallel workers and
+        Study 2 grid — 2,880 runs — with joblib-parallel workers and
         periodic checkpointing to results/case2_grid.json (Section 9).
 
 The quantum core and the training primitives (Adam, parameter-shift gradient,
@@ -72,6 +72,7 @@ calls (reset_counter, get_counter, fast_predict, train_ps_run).
 
 from __future__ import annotations
 
+import inspect
 import time
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
@@ -137,6 +138,20 @@ def make_imbalanced_split(X: np.ndarray, y: np.ndarray,
 
     train_ratio_majority : fraction of train belonging to class 0
         (e.g. 0.9 for a 90/10 imbalance, 0.5 for balanced).
+
+    Validation and test are drawn BEFORE the training subset, so that at a
+    fixed seed they hold the same samples at every ``train_ratio_majority``.
+    An earlier version drew the training subset first, which made the
+    validation and test identities shift with the ratio: a degradation curve
+    then compared different evaluation samples as well as different training
+    imbalances. The two sets were always balanced draws from the same pool,
+    so the effect was sampling noise rather than bias (measured at 0.003-0.004
+    balanced accuracy on the twelve-seed mean, against a 0.036-0.097 real
+    drop), but the ratio is now the only quantity that varies along the curve.
+
+    Drawing the training subset last also nests it across ratios: the five
+    minority samples at r = 0.99 are the first five of the two hundred and
+    fifty at r = 0.50, so the curve removes samples rather than resampling.
     """
     rng = np.random.RandomState(seed)
     idx0 = np.where(y == 0)[0]
@@ -164,9 +179,9 @@ def make_imbalanced_split(X: np.ndarray, y: np.ndarray,
     def grab(it, n):
         return np.array([next(it) for _ in range(n)])
 
-    train_idx = np.concatenate([grab(take0, n_train_maj), grab(take1, n_train_min)])
     val_idx = np.concatenate([grab(take0, n_val_per), grab(take1, n_val_per)])
     test_idx = np.concatenate([grab(take0, n_test_per), grab(take1, n_test_per)])
+    train_idx = np.concatenate([grab(take0, n_train_maj), grab(take1, n_train_min)])
     rng.shuffle(train_idx)
     rng.shuffle(val_idx)
     rng.shuffle(test_idx)
@@ -330,6 +345,7 @@ class QuantumModel:
 class ClassicalState:
     estimator: object
     fit_time_s: float
+    weighted: bool = True   # whether the fit consumed the sample weights
 
 
 class ClassicalModel:
@@ -375,15 +391,29 @@ class ClassicalModel:
                     pass
         return est
 
+    @staticmethod
+    def _accepts_sample_weight(est) -> bool:
+        """Whether this estimator's `fit` takes a `sample_weight` argument.
+
+        Checked explicitly rather than by catching TypeError, because a silent
+        fallback hides which baselines were actually weighted. Support is not
+        uniform across scikit-learn: KNeighborsClassifier has never accepted
+        sample weights, and MLPClassifier only gained them in a recent release,
+        which is why `requirements.txt` pins a lower bound on the version.
+        """
+        return 'sample_weight' in inspect.signature(est.fit).parameters
+
     def fit(self, X_train, y_train, sample_weight, X_val, y_val,
             seed: int = 0) -> ClassicalState:
         est = self._make(seed)
+        weighted = self._accepts_sample_weight(est)
         t0 = time.time()
-        try:
+        if weighted:
             est.fit(X_train, y_train, sample_weight=sample_weight)
-        except TypeError:
+        else:
             est.fit(X_train, y_train)
-        return ClassicalState(estimator=est, fit_time_s=time.time() - t0)
+        return ClassicalState(estimator=est, fit_time_s=time.time() - t0,
+                              weighted=weighted)
 
     def predict_score(self, state: ClassicalState, X: np.ndarray) -> np.ndarray:
         est = state.estimator
@@ -483,22 +513,31 @@ def run_one(model, ratio: float, seed: int,
     Steps:
       1. Carve an imbalanced train + balanced val/test from X_base.
       2. Attach class_weight sample weights to TRAIN.
-      3. (For VQC only) rescale X to [-pi, pi] using TRAIN stats.
+      3. Rescale X to [-pi, pi] using TRAIN stats, for every model.
       4. Fit the model.
       5. Score val and test; tune the decision threshold on val by balanced
          accuracy.
       6. Compute the metric panel on TEST.
+
+    Step 3 applies to quantum and classical models alike, so that every model
+    in a comparison sees exactly the same inputs. An earlier version of this
+    function rescaled for quantum models only, on the grounds that the step is
+    part of an angle-encoded circuit's definition while for a scikit-learn
+    estimator it is optional. That is defensible in isolation but it left one
+    step unshared between the two arms of the comparison, and measurement
+    showed it was not harmless: five of the six classical baselines are
+    insensitive to it (the random forest exactly so, since the map is monotone
+    per feature and tree splits are invariant under it), but the
+    capacity-matched MLP gained 2.6 to 4.1 BA points from it, which is the one
+    baseline where a preprocessing handicap is least acceptable. Sharing the
+    step removes the asymmetry rather than arguing about it.
     """
     X_tr, y_tr, X_va, y_va, X_te, y_te = make_imbalanced_split(
         X_base, y_base, train_ratio_majority=ratio,
         n_train=n_train, n_val=n_val, n_test=n_test, seed=seed
     )
     X_tr_h, y_tr_h, sw_tr_h = apply_class_weight(X_tr, y_tr)
-
-    if model.kind == 'quantum':
-        X_tr_use, X_va_use, X_te_use = rescale_to_pi(X_tr_h, X_va, X_te)
-    else:
-        X_tr_use, X_va_use, X_te_use = X_tr_h, X_va, X_te
+    X_tr_use, X_va_use, X_te_use = rescale_to_pi(X_tr_h, X_va, X_te)
 
     n_maj = int(np.sum(y_tr == 0))
     n_min = int(np.sum(y_tr == 1))
@@ -603,6 +642,13 @@ def aggregate(results: List[RunResult],
 #
 # This module implements all three tests using only scipy (no statsmodels
 # dependency); Holm's step-down adjustment is short enough to implement directly.
+
+# Decimal places at which paired metric differences are rounded before the
+# signed-rank test, so that two models scoring the same value through
+# different confusion matrices register as an exact tie rather than as a
+# ~1e-16 difference. See the comment in `friedman_wilcoxon_holm`.
+TIE_DECIMALS = 10
+
 
 def _holm_adjust(pvals: List[float]) -> List[float]:
     """Holm's step-down family-wise error correction.
@@ -719,10 +765,25 @@ def friedman_wilcoxon_holm(
     stats_w  = []
     for i, j in pairs:
         a, b = M[:, i], M[:, j]
-        try:
-            w_stat, w_p = wilcoxon(a, b, zero_method='wilcox', alternative='two-sided')
-        except ValueError:
-            w_stat, w_p = float('nan'), float('nan')
+        # Form the paired differences explicitly and round them to
+        # TIE_DECIMALS before the test. Two models can reach the same
+        # balanced accuracy through different confusion matrices, in which
+        # case the two float paths agree only to machine precision and the
+        # difference comes out at ~1e-16 instead of exactly zero. Passing the
+        # raw arrays lets scipy count such a pair as a genuine non-zero
+        # observation, which changes the signed ranks and, through Holm, the
+        # decision. The metric resolution here is 1/n_test, so rounding at
+        # ten decimals removes the artefact with a margin of many orders of
+        # magnitude and cannot merge two truly distinct values.
+        d = np.round(a - b, TIE_DECIMALS)
+        if np.all(d == 0):
+            w_stat, w_p = float('nan'), 1.0
+        else:
+            try:
+                w_stat, w_p = wilcoxon(d, zero_method='wilcox',
+                                       alternative='two-sided')
+            except ValueError:
+                w_stat, w_p = float('nan'), float('nan')
         raw_ps.append(w_p if not np.isnan(w_p) else 1.0)
         diffs.append(float(np.mean(a) - np.mean(b)))
         stats_w.append(float(w_stat) if not np.isnan(w_stat) else float('nan'))
@@ -772,7 +833,7 @@ def print_friedman_summary(stats: Dict, alpha: float = 0.05) -> None:
 # =============================================================================
 #
 # Generates the experimental data for Case Study 2 of the thesis: 2 noise
-# levels x 12 models x 7 ratios x 12 seeds = 2,016 runs, with joblib-parallel
+# levels x 12 models x 10 ratios x 12 seeds = 2,880 runs, with joblib-parallel
 # task execution and periodic JSON checkpointing to results/case2_grid.json.
 #
 # Parallelism. Tasks are independent (each is a fully self-contained
@@ -795,7 +856,13 @@ GRID_CONFIG = {
     'noise_levels': [0.1, 0.3],
     'n_total_base': 8000,
     'n_train': 500, 'n_val': 400, 'n_test': 1200,
-    'ratios': [0.50, 0.60, 0.70, 0.80, 0.90, 0.95, 0.99],
+    # Ratios are log-spaced in the *minority count*, which is the variable
+    # that actually drives the degradation: 250, 200, 150, 100, 50, 35, 25,
+    # 20, 10, 5 minority training samples. The three points above 0.90 were
+    # added after the first grid showed that ~92% of the total drop happens
+    # between r=0.90 and r=0.99, so the original seven sampled the flat
+    # region five times and the informative region twice.
+    'ratios': [0.50, 0.60, 0.70, 0.80, 0.90, 0.93, 0.95, 0.96, 0.98, 0.99],
     'seeds': list(range(12)),  # 12 seeds keeps the Wilcoxon+Holm floor < alpha
     'quantum_iter': 200,
     'quantum_models': ['data_reuploading', 'no_reuploading', 'fixed_vqc',
@@ -869,12 +936,26 @@ def run_grid(out_path: Optional[str] = None,
         print('All tasks done; nothing to do.')
         return
 
-    def save_checkpoint():
+    def save_checkpoint(attempts: int = 5, pause: float = 1.0):
+        """Write the checkpoint atomically, retrying the final rename.
+
+        On Windows ``os.replace`` raises PermissionError if any other process
+        holds the destination open (an editor, a reader, an antivirus scan).
+        Losing a long grid to that would be needless, so the rename is retried
+        a few times before giving up.
+        """
         os.makedirs(os.path.dirname(out_path), exist_ok=True)
         with open(out_path + '.tmp', 'w') as f:
             json.dump({'config': GRID_CONFIG, 'runs': all_runs},
                       f, indent=1, default=float)
-        os.replace(out_path + '.tmp', out_path)
+        for attempt in range(attempts):
+            try:
+                os.replace(out_path + '.tmp', out_path)
+                return
+            except PermissionError:
+                if attempt == attempts - 1:
+                    raise
+                time.sleep(pause)
 
     t_start = time.time()
     n_done = 0

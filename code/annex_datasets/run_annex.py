@@ -12,8 +12,8 @@ identical is what makes the annex numbers directly comparable to the main study,
 and the 12-seed budget is what lets the pairwise Wilcoxon+Holm protocol certify
 model pairs.
 
-Grid per dataset: 2 noise x 12 models x 7 ratios x 12 seeds = 2 016 runs
-(identical to the main study). Four datasets => 8 064 runs.
+Grid per dataset: 2 noise x 12 models x 10 ratios x 12 seeds = 2 880 runs
+(identical to the main study). Four datasets => 11 520 runs.
 
 Parallelism. Tasks are independent ``run_one`` calls keyed on
 (dataset, noise, model, ratio, seed), fanned out to ``joblib.Parallel`` (loky
@@ -72,7 +72,8 @@ CONFIG: Dict = dict(
     n_train          = 500,
     n_val            = 400,
     n_test           = 1200,
-    ratios           = [0.50, 0.60, 0.70, 0.80, 0.90, 0.95, 0.99],
+    ratios           = [0.50, 0.60, 0.70, 0.80, 0.90,
+                        0.93, 0.95, 0.96, 0.98, 0.99],
     seeds            = list(range(12)),
     quantum_iter     = 200,
     quantum_models   = ['data_reuploading', 'no_reuploading', 'fixed_vqc',

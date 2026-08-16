@@ -1,0 +1,47 @@
+# =============================================================================
+# Reference environment (exact pins)
+# =============================================================================
+# This file reproduces the environment that produced every number, table and
+# figure reported in the thesis. Use it when the goal is to regenerate the
+# published results bit-for-bit.
+#
+#   python -m venv .venv-reference
+#   .venv-reference/Scripts/activate      # Windows
+#   pip install -r requirements-reference.txt
+#
+# For ordinary development, or on a platform where these exact builds are not
+# available, use requirements.txt instead: it gives the compatible ranges the
+# framework is expected to run under.
+#
+# Interpreter: CPython 3.12.10, Windows 11 x86-64.
+# BLAS backend: scipy-openblas (the NumPy wheel default).
+#
+# Why the pins matter. Sample-weight support is not uniform across
+# scikit-learn releases: KNeighborsClassifier has never accepted sample
+# weights, and MLPClassifier gained them only recently. On an older release
+# the parameter-matched MLP would train unweighted and its behaviour under
+# imbalance would differ from what the thesis reports. The quantum arm is
+# pure NumPy and is insensitive to everything below except numpy itself.
+# -----------------------------------------------------------------------------
+
+# Parameter-shift path (Case Study II grid and all statistics)
+numpy==2.5.1
+scipy==1.18.0
+scikit-learn==1.9.0
+joblib==1.5.3
+
+# Plotting and notebook UI
+matplotlib==3.11.0
+plotly==6.8.0
+ipywidgets==8.1.8
+jupyterlab==4.6.1
+
+# Autodifferentiation path (Case Study I only)
+# The torch pin below is the CUDA 13.0 build. For a CPU-only environment
+# install torch==2.12.1 from the default index instead; the AD-vs-PS
+# equivalence check is unaffected, only its runtime changes.
+qibo==0.2.23
+qiboml==0.0.2
+torch==2.12.1+cu130
+pennylane==0.45.1
+tensorflow==2.21.0
