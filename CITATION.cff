@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If this framework is useful in your work, please cite the Master's Thesis below."
+title: "Design of an Evaluation Framework for Hybrid Quantum-Classical Machine Learning"
+type: software
+authors:
+  - family-names: "Oriola Díaz"
+    given-names: "Sergio"
+repository-code: "https://github.com/sergiooriola/hybrid-qml-evaluation"
+license: MIT
+preferred-citation:
+  type: thesis
+  title: "Design of an Evaluation Framework for Hybrid Quantum-Classical Machine Learning"
+  authors:
+    - family-names: "Oriola Díaz"
+      given-names: "Sergio"
+  thesis-type: "Master's thesis"
+  institution:
+    name: "Universidad Politécnica de Madrid, ETSI de Telecomunicación"
+  year: 2026

@@ -10,6 +10,12 @@ comparison of six VQC architectures against six classical baselines
 (one of them capacity-matched) under increasing class imbalance, on two `make_moons`
 datasets of contrasting geometric difficulty.
 
+![Balanced accuracy of the six quantum architectures and the six classical baselines at the most imbalanced ratio (r = 0.99), at both noise levels](code/figures/case2-headtohead.png)
+
+*Case Study II at the most imbalanced ratio (`r = 0.99`): balanced
+accuracy of the six VQC architectures and the six classical baselines,
+mean ± std over 12 seeds, on both datasets.*
+
 The full motivation, methodology, results and discussion are documented
 in the accompanying Master's Thesis manuscript. This README covers the
 project structure and how to reproduce its results from source.
