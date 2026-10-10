@@ -10,6 +10,16 @@ comparison of six VQC architectures against six classical baselines
 (one of them capacity-matched) under increasing class imbalance, on two `make_moons`
 datasets of contrasting geometric difficulty.
 
+**Result in brief.** On these datasets the classical baselines win. Across
+the 20 (noise, ratio) settings, the pre-registered protocol certifies 627
+classical-over-quantum differences and 26 quantum-over-classical ones, out
+of 720 quantum-classical pairs. All 26 are on the easier dataset
+(`noise = 0.1`), against logistic regression, the linear SVM and the small
+MLP, and none survives at the two most imbalanced ratios. No quantum
+architecture is certified better than the RBF SVM, kNN or random forest in
+any setting. `python code/case2_numbers.py` prints these counts from the
+archived grid.
+
 ![Balanced accuracy of the six quantum architectures and the six classical baselines at the most imbalanced ratio (r = 0.99), at both noise levels](code/figures/case2-headtohead.png)
 
 *Case Study II at the most imbalanced ratio (`r = 0.99`): balanced
