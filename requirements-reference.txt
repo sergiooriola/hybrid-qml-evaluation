@@ -34,7 +34,7 @@ joblib==1.5.3
 matplotlib==3.11.0
 plotly==6.8.0
 ipywidgets==8.1.8
-jupyterlab==4.6.1
+jupyterlab==4.6.4
 
 # Autodifferentiation path (Case Study I only)
 # The torch pin below is the CUDA 13.0 build. For a CPU-only environment

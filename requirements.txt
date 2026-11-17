@@ -42,7 +42,7 @@ ipywidgets>=8.0,<9.0
 
 # Jupyter kernel and notebook UI                           [PS] [AD]
 jupyter>=1.0
-jupyterlab>=4.0
+jupyterlab>=4.6.4
 
 # Quantum simulator + autodifferentiation                       [AD]
 # These are exercised ONLY by the Qibo+PyTorch (autodiff) cells of the
